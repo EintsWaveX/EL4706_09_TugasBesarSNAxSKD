@@ -4,16 +4,16 @@
 #include <PID_v1.h>
 #include <vector>
 
-#define MIN_TEMP 22
-#define MAX_TEMP 30
+#define MIN_TEMP 24
+#define MAX_TEMP 32
 #define WATER_SENSOR_PIN 34
 #define WATER_ACTUATOR_IN1_PIN 32 // ADC pin
 #define WATER_ACTUATOR_ENA_PIN 17 // ENA (PWM) pin
-#define ACTUATOR_PIN 25     // Output pin for relay, pump, etc.
+#define DHT22_SENSOR_PIN 13
 #define FANBLOWER_ACTUATOR_PIN 16
 
 TFT_eSPI tft = TFT_eSPI();
-DHT dht(13, DHT22);
+DHT dht(DHT22_SENSOR_PIN, DHT22);
 
 unsigned long lastTouchTime = 0, lastGetData = 0;
 const unsigned long debounceDelay = 50; // milliseconds
@@ -37,16 +37,16 @@ int countGridGapXIndex = 5, countHistorySizeIndex = 5, waterPumpSpeedIndex = 1;
 const int gridGapX[7] = {2, 4, 5, 7, 8, 10, 14};
 const int historySize[7] = {10, 20, 30, 60, 100, 150, 210};
 const float waterPumpSpeedList[5] = {0.5, 1.0, 2.0, 3.0, 4.0};
-const float waterPumpPWMList[5] = {154.2, 179.4, 204.6, 229.8, 255.0};
+const float waterPumpPWMList[5] = {158.4, 166.8, 175.2, 183.6, 192.0};
 
 int rawValue = 0;
 float filtered = 0;
 const float alpha = 0.1;
 float waterPercent = 0.0;
-const int sensorMaxValue = 2000; // Calibrate this for full water level
+const int sensorMaxValue = 1800; // Calibrate this for full water level
 const int sensorMinValue = 0;  // Calibrate this for dry level
-const int waterMinPercent = 60, waterMaxPercent = 90;
-float waterSetpointPercent = 75.0;    // Default setpoint
+const int waterMinPercent = 30, waterMaxPercent = 60;
+float waterSetpointPercent = 0;    // Default setpoint
 
 const int pwmFrequency_WATERPUMP = 1000; // 1 kHz PWM frequency (standard for water pumps)
 const int pwmFrequency_FANBLOWER = 25000; // 25 kHz PWM frequency (standard for 4-wire fans)
@@ -61,7 +61,7 @@ float minTemp = 0, maxTemp = 0, avgTemp = 0;
 float minHumi = 0, maxHumi = 0, avgHumi = 0;
 
 // ============================== PID PID PID ==============================
-double Kp = 60.0, Ki = 0.25, Kd = 20.0;
+double Kp = 100.0, Ki = 0.1, Kd = 5.0;
 double Setpoint;     // Desired temperature
 double Input;        // Current temperature from sensor
 double Output;       // PWM value for fan
@@ -402,7 +402,7 @@ void drawWaterLevelSetpointScreen(const String &title) {
     tft.setTextSize(3);
     tft.drawString("%", (320 - (tft.width() / 4)) + 20, wYPos + 45);
     tft.setTextSize(1);
-    tft.drawString("Min: 60%, Max: 90%", incWLSBtn.x - 42, incWLSBtn.y + 40);
+    tft.drawString("Min: 30%, Max: 60%", incWLSBtn.x - 42, incWLSBtn.y + 40);
 
     tft.fillRect(75 + 20, 240 - 20 - 75, 130, 85, TFT_BLACK);
     tft.drawRect(75 + 20, 240 - 20 - 75, 130, 85, TFT_WHITE);
@@ -538,7 +538,7 @@ void drawSetTemperatureScreen(const String &title) {
     tft.setTextSize(3);
     tft.drawString("C", (320 / 2) + 36 + 2, 240 - (130 / 2) + 2);
     tft.setTextSize(1);
-    tft.drawString("Min: 22, Max: 28", 105 + 37 + 5, 240 - 17);
+    tft.drawString("Min: 24, Max: 32", 105 + 37 + 5, 240 - 17);
 }
 
 void drawTempGraph(const String &title, int setGridGapX = 10) {
@@ -1074,7 +1074,7 @@ void loop() {
     rawValue = analogRead(WATER_SENSOR_PIN);
     filtered = alpha * rawValue + (1 - alpha) * filtered;
     float norm = filtered / sensorMaxValue;
-    float adjusted = pow(norm, 2.75);
+    float adjusted = pow(norm, 2.0);
     waterPercent = constrain((int)(adjusted * 100.0), 0, 100);
     if (waterPercent > waterSetpointPercent) {
         ledcWrite(pwmChannel_WATERPUMP, waterPumpPWMList[waterPumpSpeedIndex]);
