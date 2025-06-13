@@ -6,13 +6,17 @@
 
 #define MIN_TEMP 24
 #define MAX_TEMP 32
+#define MIN_TEMP 24
+#define MAX_TEMP 32
 #define WATER_SENSOR_PIN 34
 #define WATER_ACTUATOR_IN1_PIN 32 // ADC pin
 #define WATER_ACTUATOR_ENA_PIN 17 // ENA (PWM) pin
 #define DHT22_SENSOR_PIN 13
+#define DHT22_SENSOR_PIN 13
 #define FANBLOWER_ACTUATOR_PIN 16
 
 TFT_eSPI tft = TFT_eSPI();
+DHT dht(DHT22_SENSOR_PIN, DHT22);
 DHT dht(DHT22_SENSOR_PIN, DHT22);
 
 unsigned long lastTouchTime = 0, lastGetData = 0;
@@ -38,11 +42,13 @@ const int gridGapX[7] = {2, 4, 5, 7, 8, 10, 14};
 const int historySize[7] = {10, 20, 30, 60, 100, 150, 210};
 const float waterPumpSpeedList[5] = {0.5, 1.0, 2.0, 3.0, 4.0};
 const float waterPumpPWMList[5] = {158.4, 166.8, 175.2, 183.6, 192.0};
+const float waterPumpPWMList[5] = {158.4, 166.8, 175.2, 183.6, 192.0};
 
 int rawValue = 0;
 float filtered = 0;
 const float alpha = 0.1;
 float waterPercent = 0.0;
+const int sensorMaxValue = 1800; // Calibrate this for full water level
 const int sensorMaxValue = 1800; // Calibrate this for full water level
 const int sensorMinValue = 0;  // Calibrate this for dry level
 const int waterMinPercent = 30, waterMaxPercent = 60;
@@ -61,6 +67,7 @@ float minTemp = 0, maxTemp = 0, avgTemp = 0;
 float minHumi = 0, maxHumi = 0, avgHumi = 0;
 
 // ============================== PID PID PID ==============================
+double Kp = 100.0, Ki = 0.1, Kd = 5.0;
 double Kp = 100.0, Ki = 0.1, Kd = 5.0;
 double Setpoint;     // Desired temperature
 double Input;        // Current temperature from sensor
